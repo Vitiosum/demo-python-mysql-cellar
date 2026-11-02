@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Press a specimen{% endblock %}
+{% block main %}
+{% set chosen = values.get('drawn') or ('oak:' ~ seeds['oak']) %}
+<div class="wrap press-page">
+  <header class="press-head">
+    <h1 class="title title--md">Press a specimen</h1>
+    <p class="lede">Choose a plant drawn by code, or lay a photo of your own leaf on the sheet, then write its label.
+      Pressing sends the image to Cellar and the label to MySQL.</p>
+  </header>
+
+  {% if errors.form %}<p class="form-alert" role="alert">{{ errors.form }}</p>{% endif %}
+
+  <form class="press-form" method="post" action="/press" enctype="multipart/form-data">
+    <fieldset class="chooser">
+      <legend class="press-legend">The specimen</legend>
+      <div class="source-switch">
+        <label><input type="radio" name="source" value="drawn"{% if values.source != 'photo' %} checked{% endif %}> Drawn by code</label>
+        <label><input type="radio" name="source" value="photo"{% if values.source == 'photo' %} checked{% endif %}> Your photo</label>
+      </div>
+
+      <div class="source-pane source-pane--drawn">
+        <div class="picker" role="radiogroup" aria-label="Drawn specimens">
+          {% for kind, (latin, common, family) in kinds.items() %}
+          {% set value = kind ~ ':' ~ seeds[kind] %}
+          <label class="pick">
+            <input type="radio" name="drawn" value="{{ value }}" data-latin="{{ latin }}" data-common="{{ common }}" data-family="{{ family }}"{% if chosen.split(':')[0] == kind %} checked{% endif %}>
+            <img src="/draw/{{ kind }}.svg?seed={{ seeds[kind] }}" alt="" width="120" height="180" loading="lazy">
+            <span class="pick__name">{{ latin }}</span>
+          </label>
+          {% endfor %}
+        </div>
+        {% if errors.kind %}<p class="field-error">{{ errors.kind }}</p>{% endif %}
+        <button class="btn-quiet" type="button" data-redraw hidden>Draw new variants</button>
+      </div>
+
+      <div class="source-pane source-pane--photo">
+        <label class="dropzone">
+          <input type="file" name="photo" accept="image/jpeg,image/png,image/webp,image/gif" data-max="5242880">
+          <img class="dropzone__preview" alt="" hidden>
+          <span class="dropzone__text">Lay your leaf here</span>
+          <span class="dropzone__fine">JPEG, PNG, WebP or GIF, up to 5 MB. It stays private in Cellar.</span>
+        </label>
+        {% if errors.photo %}<p class="field-error">{{ errors.photo }}</p>{% endif %}
+        <p class="field-error" data-photo-error hidden></p>
+      </div>
+    </fieldset>
+
+    <fieldset class="label-set">
+      <legend class="press-legend">The label</legend>
+      <div class="label label--form">
+      <p class="label__inst">Herbarium Clever Cloud</p>
+
+      <label class="field">Family
+        <input name="family" list="families" required minlength="3" maxlength="60" value="{{ values.get('family', '') }}" placeholder="Fagaceae" autocomplete="off">
+      </label>
+      {% if errors.family %}<p class="field-error">{{ errors.family }}</p>{% endif %}
+      <datalist id="families">{% for _, (_, _, fam) in kinds.items() %}<option value="{{ fam }}">{% endfor %}</datalist>
+
+      <label class="field field--latin">Latin name
+        <input name="latin_name" required minlength="3" maxlength="120" value="{{ values.get('latin_name', '') }}" placeholder="Quercus robur" autocomplete="off">
+      </label>
+      {% if errors.latin_name %}<p class="field-error">{{ errors.latin_name }}</p>{% endif %}
+
+      <label class="field">Common name
+        <input name="common_name" required minlength="2" maxlength="120" value="{{ values.get('common_name', '') }}" placeholder="English oak" autocomplete="off">
+      </label>
+      {% if errors.common_name %}<p class="field-error">{{ errors.common_name }}</p>{% endif %}
+
+      <label class="field">Loc.
+        <input name="locality" required minlength="2" maxlength="120" value="{{ values.get('locality', '') }}" placeholder="Jardin des Plantes, Paris">
+      </label>
+      {% if errors.locality %}<p class="field-error">{{ errors.locality }}</p>{% endif %}
+
+      <div class="field-row">
+        <label class="field">Date
+          <input type="date" name="collected_on" required min="1700-01-01" value="{{ values.get('collected_on', '') }}" data-today>
+        </label>
+        <label class="field field--hand">Leg.
+          <input name="collector" required minlength="2" maxlength="80" value="{{ values.get('collector', '') }}" placeholder="your name" autocomplete="name">
+        </label>
+      </div>
+      {% if errors.collected_on %}<p class="field-error">{{ errors.collected_on }}</p>{% endif %}
+      {% if errors.collector %}<p class="field-error">{{ errors.collector }}</p>{% endif %}
+
+      <button class="btn-press btn-press--wide" type="submit">Press specimen</button>
+      <p class="press-fine">One object goes to the private Cellar bucket <span class="typed">{{ bucket }}</span>, one row to the MySQL table <span class="typed">specimens</span>.</p>
+      </div>
+    </fieldset>
+  </form>
+</div>
+{% endblock %}

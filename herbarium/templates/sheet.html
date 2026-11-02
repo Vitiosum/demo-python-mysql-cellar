@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}{{ s.latin_name }}, sheet {{ '%05d' | format(s.id) }}{% endblock %}
+{% block main %}
+<div class="wrap sheet-page">
+  <nav class="sheet-nav" aria-label="Sheets">
+    <a href="/">Back to the collection</a>
+    <span class="sheet-nav__turn">
+      {% if newer %}<a href="/specimen/{{ newer }}" rel="prev">Newer sheet</a>{% endif %}
+      {% if older %}<a href="/specimen/{{ older }}" rel="next">Older sheet</a>{% endif %}
+    </span>
+  </nav>
+
+  {% if pressed %}
+  <p class="pressed-note" role="status">
+    <strong>Pressed.</strong> Cellar stored the image in {{ put_ms }} ms, then MySQL inserted row {{ s.id }} in {{ insert_ms }} ms.
+    The fragment packet below holds both records.
+  </p>
+  {% endif %}
+
+  <div class="sheet-layout">
+    <article class="sheet sheet--lg" style="--tilt: 0deg">
+      {{ m.stamp(s.id, "stamp--lg") }}
+      {{ m.mount(s, image_url, true) }}
+      {{ m.label(s) }}
+    </article>
+
+    <aside class="record" aria-label="Accession record">
+      <div class="index-card">
+        <p class="index-card__no">Nº {{ '%05d' | format(s.id) }}</p>
+        <h1 class="index-card__taxon">{{ s.latin_name }}</h1>
+        <p class="index-card__common">{{ s.common_name }}</p>
+        <dl class="index-card__rows">
+          <div><dt>Family</dt><dd>{{ s.family }}</dd></div>
+          <div><dt>Locality</dt><dd>{{ s.locality }}</dd></div>
+          <div><dt>Collected</dt><dd>{{ s.collected_on.strftime('%-d %B %Y') }}</dd></div>
+          <div><dt>Collector</dt><dd class="hand">{{ s.collector }}</dd></div>
+          <div><dt>Preparation</dt><dd>
+            {% if s.drawing %}Drawn by code, {{ s.drawing.split('/')[0] }} recipe, seed {{ s.drawing.split('/')[1] }}
+            {% else %}Photograph, {{ obj.content_type.split('/')[1] | upper }}, {{ obj.size | human_bytes }}{% endif %}
+          </dd></div>
+          <div><dt>Accessioned</dt><dd>{{ s.created_at.strftime('%-d %B %Y, %H:%M') }}</dd></div>
+        </dl>
+      </div>
+
+      <details class="packet" id="packet"{% if pressed %} open{% endif %}>
+        <summary class="packet__flap">
+          <span class="packet__title">Fragment packet</span>
+          <span class="packet__hint">What MySQL and Cellar hold for this sheet</span>
+        </summary>
+        <div class="packet__contents">
+          <section class="slip" aria-labelledby="slip-mysql">
+            <h2 class="slip__title" id="slip-mysql">MySQL <span>row {{ s.id }} of table <code>specimens</code></span></h2>
+            <table class="row-table">
+              {% for name, value in row_items %}
+              <tr><th scope="row">{{ name }}</th><td>{{ 'NULL' if value is none else value }}</td></tr>
+              {% endfor %}
+            </table>
+            <p class="slip__caption">The statement that created it, as MySQL received it</p>
+            <pre class="sql">{{ s.created_sql }}</pre>
+            <p class="slip__caption">Read for this page in {{ ran.ms }} ms</p>
+            <pre class="sql">{{ ran.sql }}</pre>
+          </section>
+
+          <section class="slip" aria-labelledby="slip-cellar">
+            <h2 class="slip__title" id="slip-cellar">Cellar <span>one private object</span></h2>
+            <dl class="slip__facts">
+              <div><dt>Bucket</dt><dd>{{ bucket }}</dd></div>
+              <div><dt>Key</dt><dd>{{ s.object_key }}</dd></div>
+              <div><dt>Size</dt><dd>{{ obj.size | human_bytes }} ({{ obj.size }} bytes)</dd></div>
+              <div><dt>Content type</dt><dd>{{ obj.content_type }}</dd></div>
+              <div><dt>ETag</dt><dd>{{ obj.etag }}</dd></div>
+              <div><dt>HEAD request</dt><dd>answered in {{ head_ms }} ms</dd></div>
+            </dl>
+            <p class="slip__caption">Presigned URL, signed by the app with the add-on key</p>
+            <p class="presigned"><a href="{{ image_url }}" target="_blank" rel="noopener">{{ image_url }}</a></p>
+            <p class="expiry" data-expires="{{ expires_at.isoformat() }}">
+              Valid for <strong data-countdown>{{ ttl // 60 }}:00</strong>, until {{ expires_at.strftime('%H:%M:%S') }} UTC.
+            </p>
+            <p class="unsigned"><a href="{{ unsigned_url }}" target="_blank" rel="noopener">Open the same object without a signature</a>: Cellar answers 403, the bucket is private.</p>
+          </section>
+        </div>
+      </details>
+    </aside>
+  </div>
+</div>
+{% endblock %}

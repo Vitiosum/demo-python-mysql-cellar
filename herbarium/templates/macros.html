@@ -1,0 +1,38 @@
+{# The pieces of a herbarium sheet: accession stamp, mounted specimen, label. #}
+
+{% macro stamp(number, cls="") -%}
+<svg class="stamp {{ cls }}" viewBox="0 0 100 100" role="img" aria-label="Accession number {{ '%05d' | format(number) }}">
+  <g filter="url(#worn-ink)">
+    <circle cx="50" cy="50" r="47" fill="none" stroke="currentColor" stroke-width="2.6"/>
+    <circle cx="50" cy="50" r="29" fill="none" stroke="currentColor" stroke-width="1.1"/>
+    <text class="stamp__ring" font-size="8.4" textLength="226" lengthAdjust="spacing"><textPath href="#stamp-ring" textLength="226" lengthAdjust="spacing">HERBARIUM ✶ CLEVER CLOUD ✶ PARIS ✶ </textPath></text>
+    <text class="stamp__no" x="50" y="44" text-anchor="middle" font-size="8">Nº</text>
+    <text class="stamp__num" x="50" y="60" text-anchor="middle" font-size="14.5">{{ '%05d' | format(number) }}</text>
+  </g>
+</svg>
+{%- endmacro %}
+
+{% macro mount(s, url, eager=false) -%}
+<div class="mount {{ 'mount--drawn' if s.content_type == 'image/svg+xml' else 'mount--photo' }}">
+  <img src="{{ url }}" alt="Pressed specimen of {{ s.latin_name }}" {% if not eager %}loading="lazy" {% endif %}decoding="async">
+  {% if s.content_type != 'image/svg+xml' %}{# drawings carry their own tape #}
+  <span class="tape tape--a" aria-hidden="true"></span>
+  <span class="tape tape--b" aria-hidden="true"></span>
+  <span class="tape tape--c" aria-hidden="true"></span>
+  {% endif %}
+</div>
+{%- endmacro %}
+
+{% macro label(s) -%}
+<div class="label">
+  <p class="label__inst">Herbarium Clever Cloud</p>
+  <p class="label__family">{{ s.family }}</p>
+  <p class="label__latin">{{ s.latin_name }}</p>
+  <p class="label__common typed">{{ s.common_name }}</p>
+  <dl class="label__fields">
+    <div><dt>Loc.</dt><dd class="typed">{{ s.locality }}</dd></div>
+    <div><dt>Leg.</dt><dd class="hand">{{ s.collector | initials }}</dd></div>
+    <div><dt>Date</dt><dd class="typed">{{ s.collected_on | herb_date }}</dd></div>
+  </dl>
+</div>
+{%- endmacro %}

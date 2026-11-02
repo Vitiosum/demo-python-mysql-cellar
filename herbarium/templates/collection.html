@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% import "macros.html" as m %}
+{% block title %}The Herbarium{% endblock %}
+{% block main %}
+<section class="wrap title-block">
+  <h1 class="title">The Herbarium</h1>
+  <div class="title-block__text">
+    <p class="title-sub">Hortus siccus, a dried garden kept on Clever Cloud</p>
+    <p class="lede">Every sheet in this cabinet is two things at once: a row in a MySQL table, and a private image in a Cellar bucket. Press a specimen of your own and watch both being written.</p>
+    <a class="btn-press" href="/press">Press a specimen</a>
+  </div>
+  <aside class="clerk-slip" aria-label="Query behind this page">
+    <p class="clerk-slip__head">The clerk fetched these sheets with</p>
+    <pre class="typed clerk-slip__sql">{{ ran.sql }}</pre>
+    <p class="clerk-slip__foot">{{ sheets | length }} row{{ '' if sheets | length == 1 else 's' }} from MySQL in {{ ran.ms }} ms</p>
+  </aside>
+</section>
+
+<nav class="wrap drawers" aria-label="Filter by family">
+  {% set keep = ('&place=' ~ active.place | urlencode if active.place else '') ~ ('&collector=' ~ active.collector | urlencode if active.collector else '') %}
+  <a class="drawer{% if not active.family %} is-open{% endif %}" href="/?{{ keep[1:] }}">All families</a>
+  {% for fam in options.family %}
+  <a class="drawer{% if active.family == fam %} is-open{% endif %}" href="/?family={{ fam | urlencode }}{{ keep }}">{{ fam }}</a>
+  {% endfor %}
+</nav>
+
+<form class="wrap index-filters" method="get" action="/" data-autosubmit>
+  {% if active.family %}<input type="hidden" name="family" value="{{ active.family }}">{% endif %}
+  <label>Locality
+    <select name="place">
+      <option value="">anywhere</option>
+      {% for p in options.locality %}<option{% if active.place == p %} selected{% endif %}>{{ p }}</option>{% endfor %}
+    </select>
+  </label>
+  <label>Collector
+    <select name="collector">
+      <option value="">anyone</option>
+      {% for c in options.collector %}<option{% if active.collector == c %} selected{% endif %}>{{ c }}</option>{% endfor %}
+    </select>
+  </label>
+  <button class="btn-quiet" type="submit">Filter</button>
+  {% if active.family or active.place or active.collector %}<a class="btn-quiet" href="/">Clear filters</a>{% endif %}
+</form>
+
+<section class="wrap cabinet" aria-label="Specimen sheets">
+  {% if sheets %}
+  <ul class="sheet-grid">
+    {% for s in sheets %}
+    <li>
+      <a class="sheet-card" href="/specimen/{{ s.id }}" style="--tilt: {{ ((s.id * 37) % 9 - 4) * 0.22 }}deg">
+        <article class="sheet sheet--sm">
+          {{ m.stamp(s.id) }}
+          {{ m.mount(s, s.image_url, loop.index <= 4) }}
+          {{ m.label(s) }}
+        </article>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty-drawer">
+    <p class="empty-drawer__title">No sheet matches these filters.</p>
+    <p><a href="/">Clear the filters</a> or <a href="/press">press the first one</a>.</p>
+  </div>
+  {% endif %}
+</section>
+{% endblock %}

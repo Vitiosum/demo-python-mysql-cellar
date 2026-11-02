@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}{{ title }}{% endblock %}
+{% block main %}
+<section class="wrap error-page">
+  <p class="error-page__stamp" aria-hidden="true">{{ "Locked" if "locked" in title else "Missing" }}</p>
+  <h1 class="title title--md">{{ title }}</h1>
+  <p class="lede">{{ message }}</p>
+  {% if hint %}<p class="typed">{{ hint }}</p>{% endif %}
+  <p><a class="btn-press" href="/">Back to the collection</a></p>
+</section>
+{% endblock %}
